@@ -32,9 +32,15 @@ fn main() {
 }
 
 fn start(mut commands: Commands, object_counter: Res<ObjectCounter>) {
+    commands.spawn((
+        Id(0),
+    ));
+
     let mut rng = rand::thread_rng();
     for id in 0..object_counter.0 {
         commands.spawn((
+            Id(id as usize+1),
+            Parent(id as usize),
             Position{
                 x: rng.gen_range(0.0, 100.0),
                 y: rng.gen_range(0.0, 100.0)
@@ -46,6 +52,10 @@ fn start(mut commands: Commands, object_counter: Res<ObjectCounter>) {
 }
 
 struct ObjectCounter(i32);
+
+pub struct Id(usize);
+
+pub struct Parent(usize);
 
 struct Position {
     x: f32,
@@ -61,8 +71,8 @@ struct Counter {
     max: i32,
 }
 
-fn apply_rotational_velocity(mut exit: ResMut<Events<AppExit>>, mut counter: ResMut<Counter>, mut objects: Query<(&mut Rotation, &RotationalVelocity)>) {
-    for (mut rot, vel) in objects.iter_mut() {
+fn apply_rotational_velocity(mut exit: ResMut<Events<AppExit>>, mut counter: ResMut<Counter>, mut objects: Query<(&Id, &Parent, &Position, &mut Rotation, &RotationalVelocity)>) {
+    for (_, _, _, mut rot, vel) in objects.iter_mut() {
         rot.0 += vel.0;
         rot.0 = rot.0.signum() * rot.0.abs() % 360.0;
     }
@@ -70,8 +80,8 @@ fn apply_rotational_velocity(mut exit: ResMut<Events<AppExit>>, mut counter: Res
     if counter.current < counter.max {
         counter.current += 1;
     } else {
-        for (angle, angle_vel) in objects.iter_mut() {
-            println!("{} degs : {} per second", angle.0, angle_vel.0);
+        for (id, parent, position, angle, angle_vel) in objects.iter_mut() {
+            println!("ID {} : Parent {} : ({}, {}) : {} degs : {} per second", id.0, parent.0, position.x, position.y, angle.0, angle_vel.0);
         }
 
         exit.send(AppExit{});
